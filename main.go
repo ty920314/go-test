@@ -5,6 +5,6 @@ func main() {
 	//pointer()
 	//slice()
 	//cpslice()
-	listTest()
-
+	//	listTest()
+	sin()
 }
