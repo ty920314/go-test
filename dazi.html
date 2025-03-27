@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>游戏搭子匹配系统架构图</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-tomorrow.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-json.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        .toc {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 250px;
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .toc ul {
+            list-style-type: none;
+            padding-left: 20px;
+        }
+        .toc li {
+            margin: 5px 0;
+        }
+        .toc a {
+            color: #2196F3;
+            text-decoration: none;
+        }
+        .toc a:hover {
+            text-decoration: underline;
+        }
+        .content {
+            margin-right: 280px;
+        }
+        .architecture-notes {
+            margin-bottom: 20px;
+            padding: 20px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+        }
+        .section {
+            margin-bottom: 25px;
+            padding: 15px;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .highlight {
+            color: #2196F3;
+            font-weight: bold;
+        }
+        .sub-section {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+        pre {
+            background-color: #1e1e1e;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 0;
+            border: 1px solid #333;
+        }
+        code {
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .token.comment {
+            color: #6a9955;
+        }
+        .token.string {
+            color: #ce9178;
+        }
+        .token.number {
+            color: #b5cea8;
+        }
+        .token.boolean {
+            color: #569cd6;
+        }
+        .token.keyword {
+            color: #569cd6;
+        }
+        .token.property {
+            color: #9cdcfe;
+        }
+        .token.punctuation {
+            color: #d4d4d4;
+        }
+        .token.operator {
+            color: #d4d4d4;
+        }
+        .token.function {
+            color: #dcdcaa;
+        }
+        .token.script {
+            color: #dcdcaa;
+        }
+        .token.parameter {
+            color: #9cdcfe;
+        }
+        .code-block {
+            position: relative;
+            margin: 20px 0;
+            background-color: #1e1e1e;
+            border-radius: 5px;
+            border: 1px solid #333;
+        }
+        .code-block::before {
+            content: attr(data-language);
+            position: absolute;
+            top: -10px;
+            right: 10px;
+            background: #2d2d2d;
+            color: #6a9955;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            border: 1px solid #333;
+        }
+        .code-block pre {
+            margin: 0;
+            padding: 15px;
+            background-color: transparent;
+            border: none;
+        }
+        .code-block code {
+            color: #d4d4d4;
+        }
+        .note {
+            background-color: #fff3cd;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .mermaid {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .test-code {
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 10px 0;
+            border: 1px solid #333;
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .test-code .comment {
+            color: #6a9955;
+        }
+        .test-code .string {
+            color: #ce9178;
+        }
+        .test-code .number {
+            color: #b5cea8;
+        }
+        .test-code .keyword {
+            color: #569cd6;
+        }
+        .test-code .type {
+            color: #4ec9b0;
+        }
+        .test-code .function {
+            color: #dcdcaa;
+        }
+        .test-code .variable {
+            color: #9cdcfe;
+        }
+        .test-code .operator {
+            color: #d4d4d4;
+        }
+        .test-code .punctuation {
+            color: #d4d4d4;
+        }
+        .test-code .json {
+            color: #ce9178;
+        }
+        .test-code .json-key {
+            color: #9cdcfe;
+        }
+        .test-code .json-value {
+            color: #b5cea8;
+        }
+    </style>
+</head>
+<body>
+    <div class="toc">
+        <h3>目录</h3>
+        <ul>
+            <li><a href="#system-architecture">1. 系统整体架构</a></li>
+            <li><a href="#data-update">2. 数据更新流程</a></li>
+            <li><a href="#query-service">3. 查询服务架构</a></li>
+            <li><a href="#deployment">4. 部署架构</a></li>
+            <li><a href="#query-params">5. 查询服务API</a></li>
+            <li><a href="#es-mapping">6. ES/Tair 索引映射</a></li>
+            <li><a href="#es-query">7. ES/Tair 查询示例</a></li>
+            <li><a href="#test-scheme">8. ES/Tair 测试方案</a></li>
+        </ul>
+    </div>
+
+    <div class="content">
+        <h1>游戏搭子匹配系统架构设计说明</h1>
+        
+        <div class="architecture-notes">
+            <div class="section" id="system-architecture">
+                <h2>1. 系统整体架构</h2>
+                <p>游戏搭子匹配系统采用微服务架构，主要包含以下几个核心模块：</p>
+                
+                <h4>上游服务</h4>
+                <ul>
+                    <li><strong>用户服务</strong>：提供用户基础信息变更，包括分数、性别等属性</li>
+                    <li><strong>房间服务</strong>：提供房间状态变更，当房间人数>2时从ES中删除用户，退出房间时重新加入</li>
+                    <li><strong>游戏服务</strong>：提供游戏状态变更，包括单排状态、胜场数等信息</li>
+                </ul>
+
+                <h4>消息队列</h4>
+                <ul>
+                    <li><strong>Kafka集群</strong>：接收上游服务的消息，实现消息的可靠传递和解耦，支持消息重试和消费组管理</li>
+                </ul>
+
+                <h4>核心服务</h4>
+                <ul>
+                    <li><strong>Update Service</strong>：消费Kafka消息，处理用户属性变更，批量更新ES索引</li>
+                    <li><strong>Query Service</strong>：提供搭子查询服务，支持异步查询和结果缓存，通过requestId控制并发</li>
+                    <li><strong>定时服务</strong>：统计热门查询组合，定时预加载Top20热门查询的结果到Redis，提升查询性能</li>
+                </ul>
+
+                <h4>存储层</h4>
+                <ul>
+                    <li><strong>Elasticsearch集群</strong>：存储用户属性数据，提供高效的搜索和匹配能力</li>
+                    <li><strong>Redis集群</strong>：缓存查询结果和requestId，存储热门查询统计，提供快速的数据访问</li>
+                </ul>
+
+                <h4>客户端</h4>
+                <ul>
+                    <li><strong>游戏客户端</strong>：发起搭子查询请求，通过异步方式获取匹配结果</li>
+                    <li><strong>Web客户端</strong>：提供Web界面的搭子查询功能，复用相同的查询服务</li>
+                </ul>
+
+                <div class="mermaid">
+                    graph TD
+                    subgraph 上游服务
+                        S1[用户服务] --> K1
+                        S2[房间服务] --> K1
+                        S3[游戏服务] --> K1
+                    end
+
+                    subgraph 消息队列
+                        K1[Kafka]
+                    end
+
+                    subgraph 核心服务
+                        U1[Update Service] --> K1
+                        U1 --> ES1
+                        Q1[Query Service] --> ES1
+                        Q1 --> C1
+                        T1[定时服务] --> ES1
+                        T1 --> C1
+                    end
+
+                    subgraph 存储层
+                        ES1[Elasticsearch集群]
+                        C1[Redis集群]
+                    end
+
+                    subgraph 客户端
+                        CL1[游戏客户端] --> Q1
+                        CL2[Web客户端] --> Q1
+                    end
+
+                    style 上游服务 fill:#f9f,stroke:#333,stroke-width:2px
+                    style 消息队列 fill:#bbf,stroke:#333,stroke-width:2px
+                    style 核心服务 fill:#bfb,stroke:#333,stroke-width:2px
+                    style 存储层 fill:#fbb,stroke:#333,stroke-width:2px
+                    style 客户端 fill:#fbf,stroke:#333,stroke-width:2px
+                </div>
+            </div>
+
+            <div class="section" id="data-update">
+                <h2>2. 数据更新流程</h2>
+                <div class="mermaid">
+                    sequenceDiagram
+                        participant UBE as UBE服务
+                        participant DS as 搭子服务
+                        participant DC as 数据中心
+                        participant AS as 属性变更服务
+                        participant K as Kafka
+                        participant US as Update Service
+                        participant ES as Elasticsearch
+
+                        UBE->>K: 发送用户属性变更消息
+                        DS->>K: 发送用户属性变更消息
+                        DC->>K: 发送用户属性变更消息
+                        AS->>K: 发送用户属性变更消息
+                        
+                        K->>US: 消息推送
+                        US->>US: 消息批量处理
+                        US->>ES: 批量更新索引
+                        ES-->>US: 更新确认
+                        Note over US,ES: 失败重试机制
+                </div>
+
+                <div class="sub-section">
+                    <h4>Kafka消息内容示例</h4>
+                    <div class="code-block" data-language="JSON">
+                        <pre><code class="language-json">
+{
+    "message_id": "msg_123456789",
+    "timestamp": 1648123456789,
+    "source": "UBE_SERVICE",
+    "operation": "UPDATE",
+    "data": {
+        "user_id": "user_123",
+        "basic_info": {
+            "player_status": "idle",
+            "is_publishing": false,
+            "has_partner": false,
+            "gender": 2,
+            "score": 2500
+        },
+        "location_info": {
+            "region": "北京",
+            "university": "清华大学",
+            "is_verified": true
+        },
+        "game_status": {
+            "current_room_id": null,
+            "is_in_game": false,
+            "is_solo": true,
+            "wins_today": 3
+        },
+        "partner_status": {
+            "current_partner_id": null,
+            "partner_history": ["user_456", "user_789"]
+        }
+    },
+    "version": "1.0"
+}
+                        </code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section" id="query-service">
+                <h2>3. 查询服务架构</h2>
+                <div class="mermaid">
+                    graph LR
+                        subgraph 查询服务
+                            Q1[接收查询请求] --> Q2[参数验证]
+                            Q2 --> Q3[生成requestId]
+                            Q3 --> Q4[返回requestId]
+                            Q4 --> Q5[查询构建]
+                            Q5 --> Q6[启动异步查询]
+                            
+                            R1[接收结果获取请求] --> R2[requestId验证]
+                            R2 --> R3[获取缓存结果]
+                            R3 --> R4[分页处理]
+                            R4 --> R5[返回部分结果]
+                            R5 --> R6[维护剩余结果]
+                        end
+
+                        subgraph 异步处理
+                            A1[异步查询任务] --> A2[缓存检查]
+                            A2 -->|缓存未命中| A3[ES查询]
+                            A3 --> A4[结果处理]
+                            A4 --> A5[更新缓存]
+                        end
+
+                        subgraph 缓存存储
+                            C1[Redis集群]
+                            C2[requestId缓存]
+                            C3[查询结果缓存]
+                        end
+
+                        Q6 --> A1
+                        A5 --> C1
+                        C1 --> A2
+                        A4 --> C2
+                        C2 --> R3
+                        A4 --> C3
+                        C3 --> R3
+                        R6 --> C3
+
+                        style 查询服务 fill:#bfb,stroke:#333,stroke-width:2px
+                        style 异步处理 fill:#fbb,stroke:#333,stroke-width:2px
+                        style 缓存存储 fill:#bbf,stroke:#333,stroke-width:2px
+                </div>
+
+                <div class="sub-section">
+                    <h4>查询方法说明</h4>
+                    <div class="method-list">
+                        <h5>1. 基础查询方法</h5>
+                        <ul>
+                            <li><strong>SearchPartners</strong>：异步查询接口，根据查询参数hash生成requestId，相同条件复用缓存</li>
+                            <li><strong>GetSearchResult</strong>：分页获取结果，维护剩余结果集</li>
+                        </ul>
+
+                        <h5>2. 异步查询优势</h5>
+                        <ul>
+                            <li><strong>并发控制</strong>：通过requestId控制ES查询并发，避免ES过载</li>
+                            <li><strong>资源优化</strong>：异步处理减少服务资源占用，提高系统吞吐量</li>
+                            <li><strong>用户体验</strong>：快速返回requestId，用户可立即进行其他操作</li>
+                            <li><strong>结果缓存</strong>：支持结果分页缓存，减少重复查询</li>
+                            <li><strong>查询复用</strong>：相同查询条件复用缓存结果，提升响应速度</li>
+                            <li><strong>热门查询优化</strong>：记录并预加载Top20热门查询组合</li>
+                        </ul>
+
+                        <h5>3. 查询条件处理</h5>
+                        <ul>
+                            <li><strong>基础过滤</strong>：状态(idle/in_room_single)、排除(is_publishing/has_partner)、分数范围</li>
+                            <li><strong>地理位置</strong>：北京(1.5)、推荐城市(1.2)、其他城市</li>
+                            <li><strong>偏好条件</strong>：性别(1.2)、单排(1.1)、学校(1.3)</li>
+                            <li><strong>房间状态</strong>：房间人数>2时从ES删除，退出房间时重新索引</li>
+                        </ul>
+
+                        <h5>4. 结果排序规则</h5>
+                        <ul>
+                            <li><strong>地理位置</strong>：北京(80)、推荐城市(60)、其他(40)</li>
+                            <li><strong>其他因素</strong>：学校(70)、性别(60)、单排(50)、分数(40)、随机(30)</li>
+                        </ul>
+
+                        <h5>5. 缓存策略</h5>
+                        <ul>
+                            <li><strong>requestId生成</strong>：基于查询参数hash生成，相同条件复用缓存</li>
+                            <li><strong>requestId缓存</strong>：Redis存储，5秒过期，跟踪查询状态</li>
+                            <li><strong>结果缓存</strong>：Redis存储，5分钟过期，加速结果获取</li>
+                            <li><strong>房间状态缓存</strong>：记录房间人数，触发ES索引更新</li>
+                            <li><strong>热门查询缓存</strong>：记录Top20查询组合，定时预加载结果</li>
+                            <li><strong>查询统计</strong>：记录查询参数组合频率，动态更新热门组合</li>
+                        </ul>
+
+                        <h5>6. 错误处理</h5>
+                        <ul>
+                            <li><strong>参数验证</strong>：必填检查、范围验证、格式检查</li>
+                            <li><strong>异常处理</strong>：ES超时、缓存异常、参数错误</li>
+                            <li><strong>房间状态异常</strong>：房间人数统计异常、索引更新失败</li>
+                        </ul>
+
+                        <h5>7. 并发问题分析</h5>
+                        <ul>
+                            <li><strong>ES查询压力</strong>：使用ES查询缓存、查询限流、优化DSL、热门查询预加载</li>
+                            <li><strong>Redis缓存击穿</strong>：互斥锁、布隆过滤器、缓存预热、热门查询预加载</li>
+                            <li><strong>结果集一致性</strong>：游标分页、完整结果集、版本控制</li>
+                            <li><strong>服务限流</strong>：令牌桶算法、请求队列、熔断降级</li>
+                            <li><strong>房间状态同步</strong>：分布式锁、状态变更通知、批量索引更新</li>
+                            <li><strong>热门查询更新</strong>：定时任务、原子操作、并发控制</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section" id="deployment">
+                <h2>4. 部署架构</h2>
+                <div class="mermaid">
+                    graph TB
+                        subgraph Kubernetes集群
+                            subgraph 服务层
+                                US1[Update Service 1]
+                                US2[Update Service 2]
+                                QS1[Query Service 1]
+                                QS2[Query Service 2]
+                            end
+
+                            subgraph 中间件层
+                                K1[Kafka 1]
+                                K2[Kafka 2]
+                                K3[Kafka 3]
+                                ES1[ES 1]
+                                ES2[ES 2]
+                                ES3[ES 3]
+                            end
+
+                            subgraph 缓存层
+                                R1[Redis Master 1]
+                                R2[Redis Master 2]
+                                R3[Redis Slave 1]
+                                R4[Redis Slave 2]
+                            end
+                        end
+
+                        subgraph 外部访问
+                            E1[Service LoadBalancer]
+                            E2[Ingress Controller]
+                        end
+
+                        E1 --> US1
+                        E1 --> US2
+                        E2 --> QS1
+                        E2 --> QS2
+
+                        US1 --> K1
+                        US1 --> K2
+                        US1 --> K3
+                        US2 --> K1
+                        US2 --> K2
+                        US2 --> K3
+
+                        QS1 --> ES1
+                        QS1 --> ES2
+                        QS1 --> ES3
+                        QS2 --> ES1
+                        QS2 --> ES2
+                        QS2 --> ES3
+
+                        QS1 --> R1
+                        QS1 --> R2
+                        QS2 --> R1
+                        QS2 --> R2
+                        R1 --> R3
+                        R2 --> R4
+
+                        style Kubernetes集群 fill:#f9f,stroke:#333,stroke-width:2px
+                        style 服务层 fill:#bfb,stroke:#333,stroke-width:2px
+                        style 中间件层 fill:#bbf,stroke:#333,stroke-width:2px
+                        style 缓存层 fill:#fbb,stroke:#333,stroke-width:2px
+                        style 外部访问 fill:#fbb,stroke:#333,stroke-width:2px
+                </div>
+            </div>
+
+            <div class="section" id="query-params">
+                <h2>5. 查询服务API</h2>
+                <div class="sub-section">
+                    <h4>Proto 定义</h4>
+                    <div class="code-block" data-language="protobuf">
+                        <pre><code class="language-protobuf">
+syntax = "proto3";
+
+package game.partner;
+
+// 搭子查询服务
+service PartnerService {
+    // 异步查询搭子，返回requestId
+    rpc SearchPartners(SearchRequest) returns (SearchIdResponse) {}
+    // 根据requestId获取查询结果
+    rpc GetSearchResult(ResultRequest) returns (SearchResponse) {}
+}
+
+// 查询请求
+message SearchRequest {
+    string user_id = 1;           // 当前用户ID
+    SearchCondition condition = 2; // 查询条件
+}
+
+// 查询条件
+message SearchCondition {
+    int32 min_score = 1;        // 最低分数
+    int32 max_score = 2;        // 最高分数
+    string region = 3;          // 地区过滤
+    string university = 4;      // 学校过滤
+}
+
+// 查询ID响应
+message SearchIdResponse {
+    string request_id = 1;       // 请求唯一标识，用于后续获取结果
+}
+
+// 结果请求
+message ResultRequest {
+    string request_id = 1;       // 查询请求ID
+}
+
+// 查询结果响应
+message SearchResponse {
+    repeated string user_ids = 1;  // 匹配的用户ID列表
+    int32 total = 2;              // 总匹配数量
+}
+                        </code></pre>
+                    </div>
+                </div>
+
+                <div class="sub-section">
+                    <h4>异步查询搭子请求示例</h4>
+                    <div class="code-block" data-language="JSON">
+                        <pre><code class="language-json">
+// SearchPartners 请求
+{
+    "user_id": "user_1234",
+    "condition": {
+        "min_score": 2400,
+        "max_score": 2600,
+        "region": "北京",
+        "university": "清华大学"
+    }
+}
+
+// SearchPartners 响应
+{
+    "request_id": "req_202403150001"
+}
+                        </code></pre>
+                    </div>
+                </div>
+
+                <div class="sub-section">
+                    <h4>获取查询结果示例</h4>
+                    <div class="code-block" data-language="JSON">
+                        <pre><code class="language-json">
+// GetSearchResult 请求
+{
+    "request_id": "req_202403150001"
+}
+
+// GetSearchResult 响应
+{
+    "user_ids": [
+        "user_5678",
+        "user_9012",
+        "user_3456"
+    ],
+    "total": 45
+}
+                        </code></pre>
+                    </div>
+                </div>
+
+                <div class="sub-section">
+                    <h4>API 说明</h4>
+                    <ul>
+                        <li><strong>SearchPartners</strong>：
+                            <ul>
+                                <li>功能：发起异步搭子查询请求</li>
+                                <li>输入：用户ID和查询条件</li>
+                                <li>输出：请求ID（用于后续获取结果）</li>
+                            </ul>
+                        </li>
+                        <li><strong>GetSearchResult</strong>：
+                            <ul>
+                                <li>功能：根据请求ID获取查询结果</li>
+                                <li>输入：请求ID</li>
+                                <li>输出：匹配用户ID列表和总数</li>
+                            </ul>
+                        </li>
+                        <li><strong>匹配规则</strong>：
+                            <ul>
+                                <li>分数范围：当前玩家分数±100</li>
+                                <li>优先级：同地区女性 > 同地区所有 > 同学校女性 > 同学校所有 > 所有女性 > 所有男性</li>
+                                <li>排序：先按匹配分数，再按玩家分数</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="section" id="es-mapping">
+                <h2>6. ES/Tair 索引映射</h2>
+                <div class="sub-section">
+                    <h4>索引映射结构</h4>
+                    <div class="code-block" data-language="JSON">
+                        <pre><code class="language-json">
+{
+    "mappings": {
+        "properties": {
+            "uid": {
+                "type": "text"
+            },
+            "region": {
+                "type": "text"
+            },
+            "university": {
+                "type": "text"
+            },
+            "gender": {
+                "type": "integer"
+            },
+            "score": {
+                "type": "integer"
+            },
+            "last_played": {
+                "type": "integer"
+            }
+        }
+    }
+}
+                        </code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section" id="es-query">
+                <h2>7. ES/Tair 查询示例</h2>
+                <div class="sub-section">
+                    <h4>复杂匹配查询DSL</h4>
+                    <div class="code-block" data-language="JSON">
+                        <pre><code class="language-json">
+{
+    "query": {
+        "bool": {
+            "must": [
+                {
+                    "range": {
+                        "score": {
+                            "gte": 2400,
+                            "lte": 2600
+                        }
+                    }
+                }
+            ],
+            "should": [
+                {
+                    "bool": {
+                        "must": [
+                            {"term": {"region": "北京"}},
+                            {"term": {"gender": 2}}
+                        ],
+                        "boost": 5
+                    }
+                },
+                {
+                    "bool": {
+                        "must": [
+                            {"term": {"region": "北京"}}
+                        ],
+                        "boost": 4
+                    }
+                },
+                {
+                    "bool": {
+                        "must": [
+                            {"term": {"university": "清华大学"}},
+                            {"term": {"gender": 2}}
+                        ],
+                        "boost": 3
+                    }
+                },
+                {
+                    "bool": {
+                        "must": [
+                            {"term": {"university": "清华大学"}}
+                        ],
+                        "boost": 2
+                    }
+                },
+                {
+                    "term": {
+                        "gender": 2
+                    },
+                    "boost": 1
+                },
+                {
+                    "term": {
+                        "gender": 1
+                    },
+                    "boost": 0.5
+                }
+            ]
+        }
+    },
+    "sort": [
+        {"_score": {"order": "desc"}},
+        {"score": {"order": "desc"}}
+    ],
+    "size": 100
+}
+                        </code></pre>
+                    </div>
+                </div>
+
+                <div class="sub-section">
+                    <h4>查询逻辑说明</h4>
+                    <p>查询包含以下主要部分：</p>
+                    <ul>
+                        <li><strong>基础条件</strong>：
+                            <ul>
+                                <li>分数范围：当前玩家分数±100</li>
+                            </ul>
+                        </li>
+                        <li><strong>优先级匹配</strong>：
+                            <ol>
+                                <li>同地区女性玩家 (boost=5)</li>
+                                <li>同地区所有玩家 (boost=4)</li>
+                                <li>同学校女性玩家 (boost=3)</li>
+                                <li>同学校所有玩家 (boost=2)</li>
+                                <li>所有女性玩家 (boost=1)</li>
+                                <li>所有男性玩家 (boost=0.5)</li>
+                            </ol>
+                        </li>
+                        <li><strong>排序规则</strong>：
+                            <ul>
+                                <li>首先按匹配分数（_score）降序</li>
+                                <li>然后按玩家分数（score）降序</li>
+                            </ul>
+                        </li>
+                        <li><strong>结果数量</strong>：返回100条匹配结果</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="section" id="test-scheme">
+                <h2>ES/Tair 测试方案</h2>
+                <p>为了验证 ES/Tair 搜索功能的正确性和性能，我们实现了一个完整的测试方案。以下是测试方案的主要内容：</p>
+
+                <h3>1. 测试数据生成</h3>
+                <p>我们实现了一个随机数据生成器，用于生成测试数据：</p>
+                <pre class="test-code"><code>
+// 预定义测试数据
+var regions = []string{"北京", "上海", "广州", "深圳", "杭州", "成都", "武汉", "西安", "南京", "重庆", ""}
+var universities = []string{
+    "清华大学", "北京大学", "复旦大学", "浙江大学", "南京大学",
+    "武汉大学", "四川大学", "西安交通大学", "重庆大学", "深圳大学",
+    "广州大学", "杭州大学", "成都大学", "武汉大学", "",
+}
+
+// 生成随机用户数据
+// 用户ID: user_XXXX 格式
+// 分数范围: 1500-3500
+// 性别: 0(未知)、1(男)、2(女)
+// 地区: 从预定义城市中随机选择
+// 学校: 从预定义学校中随机选择
+// 最后游戏时间: 最近7天内</code></pre>
+
+                <h3>2. 数据统计</h3>
+                <p>测试过程中会生成以下统计数据：</p>
+                <ul>
+                    <li><strong>地区性别分布</strong>：统计每个地区的男性、女性、未知性别玩家数量</li>
+                    <li><strong>学校性别分布</strong>：统计每个学校的男性、女性、未知性别玩家数量</li>
+                    <li><strong>分数区间分布</strong>：每100分为一个区间，统计每个区间的玩家数量</li>
+                </ul>
+
+                <h3>3. 复杂匹配逻辑</h3>
+                <p>实现了一个复杂的匹配算法，包含以下优先级：</p>
+                <ol>
+                    <li>同地区女性玩家 (boost=5)</li>
+                    <li>同地区所有玩家 (boost=4)</li>
+                    <li>同学校女性玩家 (boost=3)</li>
+                    <li>同学校所有玩家 (boost=2)</li>
+                    <li>所有女性玩家 (boost=1)</li>
+                    <li>所有男性玩家 (boost=0.5)</li>
+                </ol>
+
+                <h3>4. 查询条件</h3>
+                <p>基本查询条件：</p>
+                <ul>
+                    <li>分数范围：当前玩家分数±100</li>
+                    <li>排序规则：
+                        <ul>
+                            <li>首先按匹配分数（_score）降序</li>
+                            <li>然后按玩家分数（score）降序</li>
+                        </ul>
+                    </li>
+                    <li>返回结果数量：100条</li>
+                </ul>
+
+                <h3>5. 测试输出</h3>
+                <p>测试过程会输出以下信息：</p>
+                <ul>
+                    <li>数据添加进度（每100条显示一次）</li>
+                    <li>完整的统计数据（地区、学校、分数分布）</li>
+                    <li>当前玩家信息</li>
+                    <li>查询逻辑说明</li>
+                    <li>匹配结果详情（包含匹配分数）</li>
+                </ul>
+
+                <h3>6. 测试代码示例</h3>
+                <pre class="test-code"><code>
+func TestTairSearch(t *testing.T) {
+    // 创建搜索引擎
+    factory, err := search.NewSearchFactory(tairAddr, tairPassword, tairDB, []string{})
+    if err != nil {
+        t.Fatalf("create search factory error: %v", err)
+    }
+
+    // 创建索引
+    schema := `{
+        "mappings": {
+            "properties": {
+                "uid": {"type": "text"},
+                "region": {"type": "text"},
+                "university": {"type": "text"},
+                "gender": {"type": "integer"},
+                "score": {"type": "integer"},
+                "last_played": {"type": "integer"}
+            }
+        }
+    }`
+
+    // 生成并添加测试数据
+    testUsers := generateTestUsers(1000)
+    for _, user := range testUsers {
+        userJson, _ := json.Marshal(user)
+        tairEngine.AddDoc(indexName, string(userJson))
+    }
+
+    // 执行复杂查询
+    request := `{
+        "query": {
+            "bool": {
+                "must": [
+                    {
+                        "range": {
+                            "score": {
+                                "gte": %d,
+                                "lte": %d
+                            }
+                        }
+                    }
+                ],
+                "should": [
+                    {
+                        "bool": {
+                            "must": [
+                                {"term": {"region": "%s"}},
+                                {"term": {"gender": 2}}
+                            ],
+                            "boost": 5
+                        }
+                    },
+                    {
+                        "bool": {
+                            "must": [
+                                {"term": {"region": "%s"}}
+                            ],
+                            "boost": 4
+                        }
+                    },
+                    {
+                        "bool": {
+                            "must": [
+                                {"term": {"university": "%s"}},
+                                {"term": {"gender": 2}}
+                            ],
+                            "boost": 3
+                        }
+                    },
+                    {
+                        "bool": {
+                            "must": [
+                                {"term": {"university": "%s"}}
+                            ],
+                            "boost": 2
+                        }
+                    },
+                    {
+                        "term": {
+                            "gender": 2
+                        },
+                        "boost": 1
+                    },
+                    {
+                        "term": {
+                            "gender": 1
+                        },
+                        "boost": 0.5
+                    }
+                ]
+            }
+        },
+        "sort": [
+            {"_score": {"order": "desc"}},
+            {"score": {"order": "desc"}}
+        ],
+        "size": 100
+    }`
+
+    // 执行查询并输出结果
+    searchResult, err := tairEngine.Search(indexName, request)
+    if err != nil {
+        t.Fatalf("search error: %v", err)
+    }
+
+    // 输出查询结果
+    for _, hit := range searchResult.Hits {
+        fmt.Printf("用户ID: %s, 匹配分数: %.2f, 实际分数: %d, 地区: %s, 学校: %s, 性别: %d\n",
+            hit.Source["uid"],
+            hit.Score,
+            hit.Source["score"],
+            hit.Source["region"],
+            hit.Source["university"],
+            hit.Source["gender"])
+    }
+}
+                        </code></pre>
+
+                <h3>7. 测试结果分析</h3>
+                <p>测试结果会显示以下信息：</p>
+                <ul>
+                    <li><strong>数据统计信息</strong>：
+                        <ul>
+                            <li>各地区性别分布（男性/女性/未知）</li>
+                            <li>各学校性别分布（男性/女性/未知）</li>
+                            <li>分数区间分布（每100分一个区间）</li>
+                        </ul>
+                    </li>
+                    <li><strong>查询结果详情</strong>：
+                        <ul>
+                            <li>用户ID</li>
+                            <li>匹配分数（反映优先级匹配效果）</li>
+                            <li>实际分数</li>
+                            <li>地区信息</li>
+                            <li>学校信息</li>
+                            <li>性别信息</li>
+                        </ul>
+                    </li>
+                </ul>
+                <p>这些信息可以帮助我们：</p>
+                <ul>
+                    <li><strong>验证匹配算法</strong>：
+                        <ul>
+                            <li>检查优先级排序是否符合预期（同地区女性 > 同地区所有 > 同学校女性 > 同学校所有 > 所有女性 > 所有男性）</li>
+                            <li>验证分数范围过滤是否生效</li>
+                            <li>确认排序规则是否正确应用</li>
+                        </ul>
+                    </li>
+                    <li><strong>分析数据分布</strong>：
+                        <ul>
+                            <li>评估测试数据的覆盖度</li>
+                            <li>检查各地区和学校的玩家分布</li>
+                            <li>分析分数区间分布是否合理</li>
+                        </ul>
+                    </li>
+                    <li><strong>性能优化</strong>：
+                        <ul>
+                            <li>监控查询响应时间</li>
+                            <li>分析查询结果数量</li>
+                            <li>评估索引性能</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    mermaid.initialize({
+        startOnLoad: true,
+        theme: 'default',
+        securityLevel: 'loose',
+    });
+    
+    // 初始化 Prism 语法高亮
+    Prism.highlightAll();
+</script>
+</body>
+</html> 
